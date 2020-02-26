@@ -1,0 +1,49 @@
+---
+title: "class 2/26"
+author: "Ali Crump"
+date: "2/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(rstanarm)
+
+load("nes.rda")
+```
+
+```{r}
+nes_data <- nes %>% 
+  as_tibble() %>% 
+  select(year, partyid7,real_ideo,race_adj,
+         age_discrete,educ1,female,income) %>% 
+  drop_na() %>% 
+  mutate(gender = as.factor(ifelse(female == 1, "female","non-female"))) %>% 
+  mutate(race = as.factor(case_when(race_adj == 1 ~ "white",
+                                    race_adj == 2 ~"black",
+                                    TRUE ~ "other"))) %>% 
+  mutate(ideo = as.factor(real_ideo))
+```
+
+```{r, cache=TRUE}
+
+m1 <- stan_glm(data = nes_data, partyid7 ~ gender, refresh = 0)
+print(m1, detail = FALSE)
+
+m2 <- stan_glm(data = nes_data, partyid7 ~ race, refresh = 0)
+print(m2, detail = FALSE)
+
+m3 <- stan_glm(data = nes_data, partyid7 ~ real_ideo, refresh = 0)
+print(m3, detail = FALSE)
+```
+```{r}
+nes_data %>% 
+  mutate(pred_gender = predict(m1, nes_data)) %>% 
+  mutate(pred_race = predict(m2, nes_data)) %>% 
+  mutate(pred_ideo = predict(m3,nes_data)) %>% 
+  select(partyid7,gender, pred_gender,race, pred_race, real_ideo, pred_ideo)
+
+```
+
